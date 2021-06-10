@@ -6,16 +6,18 @@ import sys
 import json
 
 PROD_SIGNING_KEY_PATH = "pubkeys/prod.key"
+PROD_SIGNING_KEY_PATH_LEGACY = "pubkeys/prod-legacy.key"
+
 RPM_DIR = "workstation"
 
 
 def verify_sig_rpm(path):
 
-    key_path = PROD_SIGNING_KEY_PATH
-    try:
-        subprocess.check_call(["rpmkeys", "--import", key_path])
-    except subprocess.CalledProcessError as e:
-        fail("Error importing key: {}".format(str(e)))
+    for key_path in [PROD_SIGNING_KEY_PATH, PROD_SIGNING_KEY_PATH_LEGACY]:
+        try:
+            subprocess.check_call(["rpmkeys", "--import", key_path])
+        except subprocess.CalledProcessError as e:
+            fail("Error importing key: {}".format(str(e)))
 
     # Check the signature
     try:
