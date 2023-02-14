@@ -1,6 +1,6 @@
 > By contributing to this project, you agree to abide by our [Code of Conduct](https://github.com/freedomofpress/.github/blob/main/CODE_OF_CONDUCT.md).
 
-# securedrop-workstation-prod-rpm-packages-lfs
+# securedrop-yum-prod
 
 Repository for storing stable builds of [SecureDrop Workstation](https://github.com/freedomofpress/securedrop-workstation)
 packages for distribution to production Workstation installs. The packages here are RPMs, intended for installation
