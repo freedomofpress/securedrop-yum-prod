@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""
+Script for generating yum repository metadata. Files are
+copied into public/ and metadata is generated there.
+"""
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+
+def main():
+    root = Path(__file__).parent.parent
+    public = root / "public"
+    workstation = root / "workstation"
+    # Reset public, copy the workstation/ tree into it
+    if public.exists():
+        shutil.rmtree(public)
+    public.mkdir()
+    shutil.copytree(workstation, public / "workstation")
+    # Folders are public/workstation/dom0/fXX, run createrepo_c in each one
+    for folder in public.glob("*/*/*/"):
+        if not folder.is_dir():
+            continue
+        print(f"Generating metadata for {folder}")
+        args = ["createrepo_c"]
+        if "SOURCE_DATE_EPOCH" in os.environ:
+            # The <revision> and <timestamp> fields are set to the current UNIX time
+            # unless we explicitly override them. In most cases we want to use
+            # the current time except when we're doing reproducibility testing.
+            args.extend(
+                [
+                    "--revision",
+                    os.environ["SOURCE_DATE_EPOCH"],
+                    "--set-timestamp-to-revision",
+                ]
+            )
+        args.append(str(folder))
+        subprocess.check_call(args)
+    print("Done!")
+
+
+if __name__ == "__main__":
+    main()
