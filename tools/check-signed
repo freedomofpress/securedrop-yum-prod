@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def verify_sig_rpm(path: Path):
+    output = subprocess.check_output(["rpm", "--checksig", path], text=True).strip()
+    # rpm --checksig returns 0 if there is *no* signature, so we have
+    # to parse stdout
+    print(output)
+    expected = "{}: digests signatures OK".format(path)
+    if output != expected:
+        print(f"Signature verification failed for {path}")
+        sys.exit(1)
+
+
+def remove_keys_in_rpm_keyring():
+    # Returns non-zero if no keys are installed
+    result = subprocess.run(["rpm", "-q", "gpg-pubkey"], stdout=subprocess.PIPE)
+    if result.returncode == 0:
+        # If a key is in the keyring, delete it
+        subprocess.check_call(
+            ["rpm", "--erase", "--allmatches", "gpg-pubkey"], stderr=subprocess.PIPE
+        )
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Verify all .rpm files are signed")
+    parser.add_argument("keyring", type=Path)
+    args = parser.parse_args()
+    if not args.keyring.exists():
+        raise RuntimeError(f"{args.keyring} doesn't exist!")
+    # Since we can't specify with which key to check sigs, clear the keyring
+    # and just import our signing key
+    remove_keys_in_rpm_keyring()
+    subprocess.check_call(["rpmkeys", "--import", str(args.keyring)])
+    for rpm in Path("workstation").glob("**/*.rpm"):
+        verify_sig_rpm(rpm)
+
+
+if __name__ == "__main__":
+    main()
