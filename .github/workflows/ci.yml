@@ -45,3 +45,8 @@ jobs:
                 ./tools/publish-real
                 git status
                 git diff --exit-code
+            - name: Artifact debugging
+              uses: actions/upload-artifact@v3
+              with:
+                name: f32-repodata
+                path: public/workstation/dom0/f32/repodata
