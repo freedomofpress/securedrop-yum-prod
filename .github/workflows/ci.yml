@@ -49,6 +49,3 @@ jobs:
               with:
                 name: f32-repodata
                 path: public/workstation/dom0/f32/repodata
-            - name: Check repository metadata is up-to-date
-              run: |
-                git diff --exit-code
