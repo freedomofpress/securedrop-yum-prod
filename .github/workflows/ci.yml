@@ -44,9 +44,11 @@ jobs:
                 export SOURCE_DATE_EPOCH=$(grep -m 1 "revision" public/**/repomd.xml | cut -d '>' -f 2 | cut -d '<' -f 1)
                 ./tools/publish-real
                 git status
-                git diff --exit-code
             - name: Artifact debugging
               uses: actions/upload-artifact@v3
               with:
                 name: f32-repodata
                 path: public/workstation/dom0/f32/repodata
+            - name: Check repository metadata is up-to-date
+              run: |
+                git diff --exit-code
