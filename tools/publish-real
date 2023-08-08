@@ -35,6 +35,7 @@ def main():
         print(f"Generating metadata for {folder}")
         args = ["createrepo_c"]
         if source_date_epoch:
+            args = ["faketime", f"@{source_date_epoch}", "createrepo_c"]
             # The <revision> and <timestamp> fields are set to the current UNIX time
             # unless we explicitly override them. In most cases we want to use
             # the current time except when we're doing reproducibility testing.

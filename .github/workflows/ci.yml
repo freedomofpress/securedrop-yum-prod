@@ -30,7 +30,7 @@ jobs:
         steps:
             - name: Install dependencies
               run: |
-                apt-get update && apt-get install --yes python3 git git-lfs createrepo-c
+                apt-get update && apt-get install --yes python3 git git-lfs createrepo-c faketime
             - name: Checkout
               uses: actions/checkout@v3
               with:
