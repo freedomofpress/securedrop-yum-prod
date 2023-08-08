@@ -36,6 +36,7 @@ def main():
                 ]
             )
         args.append(str(folder))
+        print("$ " + " ".join(args))
         subprocess.check_call(args)
     print("Done!")
 
