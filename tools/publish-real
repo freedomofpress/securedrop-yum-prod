@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""
+Script for generating yum repository metadata. Files are
+copied into public/ and metadata is generated there.
+"""
+import argparse
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build yum repodata metadata")
+    parser.add_argument("--reproduce", action="store_true", help="Reproduce the current metadata")
+    source_date_epoch = int(os.environ.get("SOURCE_DATE_EPOCH", 0))
+    root = Path(__file__).parent.parent
+    public = root / "public"
+    workstation = root / "workstation"
+    # Reset public, copy the workstation/ tree into it
+    if public.exists():
+        shutil.rmtree(public)
+    public.mkdir()
+    shutil.copytree(workstation, public / "workstation")
+    if source_date_epoch:
+        for root, dirs, files in os.walk(public):
+            for name in files:
+                os.utime(os.path.join(root, name), times=(source_date_epoch, source_date_epoch))
+            for name in dirs:
+                os.utime(os.path.join(root, name), times=(source_date_epoch, source_date_epoch))
+    # Folders are public/workstation/dom0/fXX, run createrepo_c in each one
+    for folder in public.glob("*/*/*/"):
+        if not folder.is_dir():
+            continue
+        print(f"Generating metadata for {folder}")
+        args = ["createrepo_c"]
+        if source_date_epoch:
+            args = ["faketime", f"@{source_date_epoch}", "createrepo_c"]
+            # The <revision> and <timestamp> fields are set to the current UNIX time
+            # unless we explicitly override them. In most cases we want to use
+            # the current time except when we're doing reproducibility testing.
+            args.extend(
+                [
+                    "--revision",
+                    str(source_date_epoch),
+                    "--set-timestamp-to-revision",
+                ]
+            )
+        args.append(str(folder))
+        print("$ " + " ".join(args))
+        subprocess.check_call(args)
+    print("Done!")
+
+
+if __name__ == "__main__":
+    main()

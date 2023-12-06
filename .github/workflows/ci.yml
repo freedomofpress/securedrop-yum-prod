@@ -1,0 +1,51 @@
+name: CI
+on: [push, pull_request]
+defaults:
+  run:
+    shell: bash
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+        container: debian:bookworm
+        steps:
+            - name: Install dependencies
+              run: |
+                apt-get update && apt-get install --yes python3 rpm gpg git git-lfs wget
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                lfs: true
+                fetch-depth: 0
+            - name: Verify rpms are signed by release key
+              run: |
+                git config --global --add safe.directory '*'
+                wget https://github.com/freedomofpress/securedrop-debian-packaging/raw/main/securedrop-keyring/securedrop-keyring.gpg
+                gpg --import securedrop-keyring.gpg && gpg --armor --export > securedrop-keyring.asc
+                ./tools/check-signed securedrop-keyring.asc
+
+    metadata:
+        runs-on: ubuntu-latest
+        container: debian:bookworm
+        steps:
+            - name: Install dependencies
+              run: |
+                apt-get update && apt-get install --yes python3 git git-lfs createrepo-c faketime
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                lfs: true
+                fetch-depth: 0
+            - name: Check repository metadata is up-to-date
+              run: |
+                git config --global --add safe.directory '*'
+                shopt -s globstar
+                # Parse the value out of <revision></revision>
+                export SOURCE_DATE_EPOCH=$(grep -m 1 "revision" public/**/repomd.xml | cut -d '>' -f 2 | cut -d '<' -f 1)
+                ./tools/publish-real
+                git status
+            - name: Artifact debugging
+              uses: actions/upload-artifact@v3
+              with:
+                name: f32-repodata
+                path: public/workstation/dom0/f32/repodata
