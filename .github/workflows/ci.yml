@@ -1,0 +1,19 @@
+---
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - run: apt-get update && apt-get install -y sudo git git-lfs
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Install Debian packaging dependencies
+        run: sudo apt install -y python3 rpm
+      - name: Verify the signatures of all rpm artifacts
+        run: |
+          ./scripts/check.py --verify --all
