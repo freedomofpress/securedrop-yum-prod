@@ -12,7 +12,6 @@ RPM_DIR = "workstation"
 
 
 def verify_sig_rpm(path):
-
     for key_path in [PROD_SIGNING_KEY_PATH, PROD_SIGNING_KEY_PATH_LEGACY]:
         try:
             subprocess.check_call(["rpmkeys", "--import", key_path])
