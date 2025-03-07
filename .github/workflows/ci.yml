@@ -3,6 +3,10 @@ name: CI
 
 on: [push, pull_request]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -17,3 +21,38 @@ jobs:
       - name: Verify the signatures of all rpm artifacts
         run: |
           ./scripts/check.py --verify --all
+
+  tests-fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - run: dnf install --assumeyes git git-lfs python3 rpm-sign
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      # This step must run on Fedora until Debian has RPM >= 4.18.1 (per
+      # securedrop-workstation#846), at which time it can be merged into the
+      # main "tests" job.
+      - name: Output the hashes of all rpm artifacts without their signatures
+        run: |
+          ./scripts/check.py --check-unsigned --all
+
+  metadata:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install --yes python3 git git-lfs createrepo-c
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Check repository metadata is up-to-date
+        run: |
+          git config --global --add safe.directory '*'
+          ./tools/publish-real --reproduce
+          git status
+          git diff --exit-code
