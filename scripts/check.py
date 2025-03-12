@@ -11,8 +11,18 @@ PROD_SIGNING_KEY_PATH_LEGACY = "pubkeys/prod-legacy.key"
 RPM_DIR = "workstation"
 
 
-def verify_sig_rpm(path):
+def check_unsigned_rpm(path):
+    subprocess.check_call(["rpm", "--delsign", path])
+    subprocess.check_call(["sha256sum", path])
 
+
+def check_unsigned_all_rpms():
+    for root, dirs, files in os.walk(RPM_DIR):
+        for name in files:
+            check_unsigned_rpm(os.path.join(root, name))
+
+
+def verify_sig_rpm(path):
     for key_path in [PROD_SIGNING_KEY_PATH, PROD_SIGNING_KEY_PATH_LEGACY]:
         try:
             subprocess.check_call(["rpmkeys", "--import", key_path])
@@ -63,6 +73,7 @@ def fail(msg):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check-unsigned", action="store_true", default=False)
     parser.add_argument("--verify", action="store_true", default=True)
     parser.add_argument("--all", action="store_true", default=False)
     parser.add_argument("packages", type=str, nargs="*", help="Files to sign/verify")
@@ -74,7 +85,16 @@ def main():
     # Since we can't specify with which key to check sigs, we should clear the keyring
     remove_keys_in_rpm_keyring()
 
-    if args.verify:
+    if args.check_unsigned:
+        output = subprocess.check_call(["rpm", "--version"])
+        if args.all:
+            check_unsigned_all_rpms()
+        else:
+            for package in args.packages:
+                assert os.path.exists(package)
+                check_unsigned_rpm(package)
+
+    elif args.verify:
         if args.all:
             verify_all_rpms()
         else:
