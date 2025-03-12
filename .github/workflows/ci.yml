@@ -3,6 +3,10 @@ name: CI
 
 on: [push, pull_request]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -33,3 +37,22 @@ jobs:
       - name: Output the hashes of all rpm artifacts without their signatures
         run: |
           ./scripts/check.py --check-unsigned --all
+
+  metadata:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install --yes python3 git git-lfs createrepo-c
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Check repository metadata is up-to-date
+        run: |
+          git config --global --add safe.directory '*'
+          ./tools/publish-real --reproduce
+          git status
+          git diff --exit-code
